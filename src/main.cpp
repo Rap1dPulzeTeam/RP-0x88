@@ -1,8 +1,8 @@
 # include <Arduino.h>
+#include "at24c.h"
 #include <USBComposite.h>
 #include <Versatile_RotaryEncoder.h>
 #include <LiquidCrystal.h>
-#include <AT24C.hpp>
 #include "Wire.h"
 
 
@@ -127,16 +127,13 @@ encoder_cc_setting_t present[8][8] = {
 //     }
 // }
 
-// AT24C EEPROM读取配置
-AT24C chippy;
-
 
 // 从EEPROM写入结构体数组
 void writeEEPROM() {
     uint16_t address = 0; // EEPROM起始地址
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
-            chippy.write(address, (byte*)&present[i][j], sizeof(encoder_cc_setting_t));
+            at24cxx_write(0x50, address, (const uint8_t*)&present[i][j], sizeof(encoder_cc_setting_t));
             address += sizeof(encoder_cc_setting_t); // 移动到下一个结构体的位置
             delay(5); // 等待EEPROM完成写操作
         }
@@ -148,7 +145,7 @@ void readEEPROM() {
     uint16_t address = 0; // EEPROM起始地址
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
-            chippy.read(address, (byte*)&present[i][j], sizeof(encoder_cc_setting_t));
+            at24cxx_read(0x50, address, (uint8_t*)&present[i][j], sizeof(encoder_cc_setting_t));
             address += sizeof(encoder_cc_setting_t); // 移动到下一个结构体的位置
         }
     }
@@ -172,7 +169,9 @@ void setup() {
 
     Wire.begin();
     delay(500);
+    //clearEEPROM(0x50, 1024);
     readEEPROM();
+
     // Initialize each encoder with its corresponding pins
     versatile_encoder = new Versatile_RotaryEncoder(encoderPinA1, encoderPinB1, KEY1_PIN);
     versatile_encoder1 = new Versatile_RotaryEncoder(encoderPinA2, encoderPinB2, KEY2_PIN);
